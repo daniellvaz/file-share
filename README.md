@@ -85,4 +85,4 @@ open index.html
 
 ## 📝 Licença
 
-MIT © [Seu Nome ou Empresa]
+MIT © Daniel Murilo Vaz
