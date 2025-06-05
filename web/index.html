@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FilesShare - Upload de Arquivos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-100 min-h-screen flex items-center justify-center">
+    <div class="bg-white shadow-lg rounded-2xl p-8 w-full max-w-md">
+      <h1 class="text-2xl font-bold text-gray-800 mb-4 text-center">
+        📁 FilesShare
+      </h1>
+      <p class="text-sm text-gray-500 text-center mb-6">
+        Compartilhe seus documentos com facilidade.
+      </p>
+
+      <form id="uploadForm" class="flex flex-col space-y-4">
+        <label class="block">
+          <span class="text-gray-700 font-medium">Selecione os arquivos</span>
+          <input
+            type="file"
+            name="files"
+            id="files"
+            multiple
+            required
+            class="mt-2 block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+          />
+        </label>
+
+        <progress
+          id="progressBar"
+          value="0"
+          max="100"
+          class="w-full h-2 bg-gray-200 rounded-full overflow-hidden hidden"
+        >
+          <div class="bg-blue-600 h-full" style="width: 0%"></div>
+        </progress>
+
+        <button
+          type="submit"
+          class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition"
+        >
+          Enviar arquivos
+        </button>
+      </form>
+
+      <div id="message" class="mt-4 text-center text-sm text-green-600"></div>
+
+      <div class="mt-6 text-center text-xs text-gray-400">
+        &copy; 2025 FilesShare. Todos os direitos reservados.
+      </div>
+    </div>
+
+    <script>
+      document
+        .getElementById("uploadForm")
+        .addEventListener("submit", function (e) {
+          e.preventDefault();
+
+          const filesInput = document.getElementById("files");
+          const files = filesInput.files;
+          const progressBar = document.getElementById("progressBar");
+          const message = document.getElementById("message");
+
+          if (!files.length) {
+            message.textContent = "Nenhum arquivo selecionado.";
+            return;
+          }
+
+          const formData = new FormData();
+          for (let file of files) {
+            formData.append("files", file);
+          }
+
+          const xhr = new XMLHttpRequest();
+          xhr.open("POST", "http://localhost:3333/upload", true);
+
+          xhr.upload.addEventListener("loadstart", () => {
+            progressBar.classList.remove("hidden");
+            progressBar.value = 0;
+            message.textContent = "";
+          });
+
+          xhr.upload.addEventListener("progress", (e) => {
+            if (e.lengthComputable) {
+              const percent = Math.round((e.loaded / e.total) * 100);
+              progressBar.value = percent;
+            }
+          });
+
+          xhr.onload = () => {
+            progressBar.classList.add("hidden");
+
+            if (xhr.status === 200) {
+              try {
+                const response = JSON.parse(xhr.responseText);
+                const downloadUrl = response.url;
+
+                // Copia o link para a área de transferência
+                navigator.clipboard
+                  .writeText(downloadUrl)
+                  .then(() => {
+                    message.innerHTML = `
+            <span class="text-green-600 font-medium">Upload realizado com sucesso!</span><br>
+            Link copiado: <a href="${downloadUrl}" class="text-blue-600 underline" target="_blank">${downloadUrl}</a>
+          `;
+                  })
+                  .catch(() => {
+                    message.innerHTML = `
+            <span class="text-green-600 font-medium">Upload realizado com sucesso!</span><br>
+            <a href="${downloadUrl}" class="text-blue-600 underline" target="_blank">${downloadUrl}</a>
+          `;
+                  });
+              } catch (err) {
+                message.textContent =
+                  "Upload feito, mas a resposta não pôde ser lida.";
+              }
+            } else {
+              message.textContent = "Erro ao enviar arquivos.";
+            }
+          };
+
+          xhr.onerror = () => {
+            progressBar.classList.add("hidden");
+            message.textContent = "Erro na conexão com o servidor.";
+          };
+
+          xhr.send(formData);
+        });
+    </script>
+  </body>
+</html>
